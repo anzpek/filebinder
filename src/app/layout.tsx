@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: '입고묶기 웹 시스템',
   description: '차량 입고 데이터 처리 및 출력 시스템',
+  other: {
+    'cache-control': 'no-cache, no-store, must-revalidate',
+  },
 };
 
 export default function RootLayout({
