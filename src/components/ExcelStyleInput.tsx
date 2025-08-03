@@ -126,6 +126,24 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     }
   };
 
+  const handleManualInput = (rowIndex: number) => {
+    const row = rows[rowIndex];
+    const manualVehicle: VehicleData = {
+      no: Date.now(),
+      accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : 'MANUAL-' + Date.now(),
+      series: '',
+      managementNumber: '',
+      vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? 'MANUAL-' + Date.now() : row.searchTerm,
+      status: '수동입력',
+      closureDate: '',
+      department: '',
+      lastFourDigits: row.searchTerm.slice(-4),
+      manager: ''
+    };
+    
+    selectVehicle(rowIndex, manualVehicle);
+  };
+
   const handleInputChange = (rowIndex: number, value: string) => {
     setRows(prev => prev.map((row, index) => {
       if (index === rowIndex) {
@@ -170,18 +188,17 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
           // 선택된 차량이 없을 때의 기존 로직
           if (value.length >= 2) {
             const searchResults = searchVehiclesByTerm(vehicleData, value);
-            const isDropdownVisible = searchResults.length > 0;
+            // 검색 결과가 없어도 수동 입력 옵션을 위해 드롭다운 표시
+            const isDropdownVisible = true;
             
-            if (isDropdownVisible) {
-              setActiveRowIndex(rowIndex);
-              // 드래그 중이 아닐 때만 위치 자동 계산
-              if (!isDragging) {
-                // 다음 프레임에서 위치 계산 (DOM 업데이트 후)
-                requestAnimationFrame(() => {
-                  const newPosition = calculateDropdownPosition(rowIndex);
-                  setDropdownPosition(newPosition);
-                });
-              }
+            setActiveRowIndex(rowIndex);
+            // 드래그 중이 아닐 때만 위치 자동 계산
+            if (!isDragging) {
+              // 다음 프레임에서 위치 계산 (DOM 업데이트 후)
+              requestAnimationFrame(() => {
+                const newPosition = calculateDropdownPosition(rowIndex);
+                setDropdownPosition(newPosition);
+              });
             }
             
             return {
@@ -271,14 +288,19 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
         e.preventDefault();
         setRows(prev => prev.map((r, i) => {
           if (i === rowIndex) {
-            const newIndex = r.selectedIndex < r.availableVehicles.length - 1 
+            // 수동 입력 옵션까지 포함하여 네비게이션 (availableVehicles.length가 수동 입력 옵션 인덱스)
+            const maxIndex = r.availableVehicles.length; // 수동 입력 옵션 포함
+            const newIndex = r.selectedIndex < maxIndex 
               ? r.selectedIndex + 1 
               : r.selectedIndex;
             
             // 드롭다운 스크롤 처리
             setTimeout(() => {
               const dropdown = document.querySelector(`[data-dropdown-row="${rowIndex}"]`);
-              const selectedItem = document.querySelector(`[data-dropdown-item="${rowIndex}-${newIndex}"]`);
+              const itemSelector = newIndex === r.availableVehicles.length 
+                ? `[data-dropdown-item="${rowIndex}-manual"]`
+                : `[data-dropdown-item="${rowIndex}-${newIndex}"]`;
+              const selectedItem = document.querySelector(itemSelector);
               if (dropdown && selectedItem) {
                 selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               }
@@ -302,7 +324,10 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
             // 드롭다운 스크롤 처리
             setTimeout(() => {
               const dropdown = document.querySelector(`[data-dropdown-row="${rowIndex}"]`);
-              const selectedItem = document.querySelector(`[data-dropdown-item="${rowIndex}-${newIndex}"]`);
+              const itemSelector = newIndex === r.availableVehicles.length 
+                ? `[data-dropdown-item="${rowIndex}-manual"]`
+                : `[data-dropdown-item="${rowIndex}-${newIndex}"]`;
+              const selectedItem = document.querySelector(itemSelector);
               if (dropdown && selectedItem) {
                 selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               }
@@ -319,7 +344,10 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
         
       case 'Enter':
         e.preventDefault();
-        if (row.availableVehicles[row.selectedIndex]) {
+        if (row.selectedIndex === row.availableVehicles.length) {
+          // 수동 입력 선택
+          handleManualInput(rowIndex);
+        } else if (row.availableVehicles[row.selectedIndex]) {
           selectVehicle(rowIndex, row.availableVehicles[row.selectedIndex]);
         }
         break;
@@ -563,7 +591,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
 
       {/* 포털로 렌더링되는 드롭다운들 */}
       {dropdownPortalContainer && rows.map((row, rowIndex) => 
-        row.dropdownVisible && row.availableVehicles.length > 0 && rowIndex === activeRowIndex && (
+        row.dropdownVisible && rowIndex === activeRowIndex && (
           createPortal(
             <div 
               key={`dropdown-${rowIndex}`}
@@ -574,9 +602,11 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                 left: `${dropdownPosition.left}px`,
                 transform: 'none',
                 width: '420px',
-                maxHeight: row.availableVehicles.length <= 5 
-                  ? `${Math.max(row.availableVehicles.length * 70 + (row.availableVehicles.length > 1 ? 45 : 0), 70)}px`
-                  : `${5 * 70 + 45}px` // 5개 * 70px + 헤더 45px
+                maxHeight: row.availableVehicles.length === 0 
+                  ? '140px' // 수동 입력만 있을 때
+                  : row.availableVehicles.length <= 5 
+                    ? `${Math.max(row.availableVehicles.length * 70 + (row.availableVehicles.length > 1 ? 45 : 0) + 70, 140)}px` // +70px for manual input
+                    : `${5 * 70 + 45 + 70}px` // 5개 * 70px + 헤더 45px + 수동입력 70px
               }}
             >
               {row.availableVehicles.length > 1 && (
@@ -589,12 +619,18 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                 </div>
               )}
               
+              {row.availableVehicles.length === 0 && (
+                <div className="px-4 py-3 bg-gray-50 border-b text-sm text-gray-600 sticky top-0 z-10">
+                  <span className="font-medium">검색 결과가 없습니다 - 아래 수동 입력을 이용하세요</span>
+                </div>
+              )}
+              
               {row.availableVehicles.map((vehicle, index) => (
                 <div
                   key={`${vehicle.vehicleNumber}-${index}`}
                   data-dropdown-item={`${rowIndex}-${index}`}
                   onClick={() => selectVehicle(rowIndex, vehicle)}
-                  className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                  className={`px-4 py-3 cursor-pointer border-b border-gray-100 ${
                     index === row.selectedIndex ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
                   }`}
                   style={{ minHeight: '70px' }}
@@ -609,6 +645,28 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                   </div>
                 </div>
               ))}
+              
+              {/* 수동 입력 옵션 */}
+              <div
+                data-dropdown-item={`${rowIndex}-manual`}
+                onClick={() => handleManualInput(rowIndex)}
+                className={`px-4 py-3 cursor-pointer border-t-2 border-blue-200 bg-blue-50 hover:bg-blue-100 ${
+                  row.selectedIndex === row.availableVehicles.length ? 'bg-blue-100 border-blue-300' : ''
+                }`}
+                style={{ minHeight: '70px' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-600 font-semibold">✏️ 수동 입력</span>
+                    <span className="text-sm text-blue-600">
+                      "{row.searchTerm}" 직접 추가
+                    </span>
+                  </div>
+                  <div className="text-xs text-blue-500">
+                    Enter 또는 클릭
+                  </div>
+                </div>
+              </div>
             </div>,
             dropdownPortalContainer
           )

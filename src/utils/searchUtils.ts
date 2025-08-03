@@ -35,11 +35,15 @@ export const searchVehiclesByTerm = (vehicleData: VehicleData[], searchTerm: str
 
 export const getSearchPlaceholder = (searchTerm: string): string => {
   if (!searchTerm) {
-    return "차량번호 뒤 4자리 또는 피해물 입력 (예: 9030, 자전, 전거)";
+    return "차량번호, 사고번호, 피해물 입력 (예: 9030, 2024-001, 자전거)";
   }
   
   if (searchTerm.length === 4 && /^\d{4}$/.test(searchTerm)) {
     return "차량번호 뒤 4자리로 검색 중...";
+  }
+  
+  if (searchTerm.includes('-') || /^\d{4}/.test(searchTerm)) {
+    return "사고번호로 검색 중...";
   }
   
   return "피해물로 검색 중...";
