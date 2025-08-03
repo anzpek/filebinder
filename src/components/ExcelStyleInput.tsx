@@ -12,6 +12,7 @@ interface ExcelRow {
   availableVehicles: VehicleData[];
   dropdownVisible: boolean;
   selectedIndex: number;
+  isManualInputMode?: boolean;
 }
 
 interface ExcelStyleInputProps {
@@ -27,6 +28,14 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
   const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [manualInputModal, setManualInputModal] = useState<{isOpen: boolean, rowIndex: number} | null>(null);
+  const [manualInputData, setManualInputData] = useState({
+    accidentNumber: '',
+    series: '',
+    managementNumber: '',
+    vehicleNumber: '',
+    status: ''
+  });
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // 초기 행 생성
@@ -128,20 +137,57 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
 
   const handleManualInput = (rowIndex: number) => {
     const row = rows[rowIndex];
-    const manualVehicle: VehicleData = {
-      no: Date.now(),
-      accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : 'MANUAL-' + Date.now(),
+    // 검색어를 기반으로 초기값 설정
+    setManualInputData({
+      accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : '',
       series: '',
       managementNumber: '',
-      vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? 'MANUAL-' + Date.now() : row.searchTerm,
-      status: '수동입력',
+      vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? '' : row.searchTerm,
+      status: ''
+    });
+    
+    // 드롭다운 닫기
+    setActiveRowIndex(null);
+    setRows(prev => prev.map((r, i) => {
+      if (i === rowIndex) {
+        return { ...r, dropdownVisible: false };
+      }
+      return r;
+    }));
+    
+    // 모달 열기
+    setManualInputModal({ isOpen: true, rowIndex });
+  };
+
+  const handleManualInputSave = () => {
+    if (!manualInputModal) return;
+    
+    const manualVehicle: VehicleData = {
+      no: Date.now(),
+      accidentNumber: manualInputData.accidentNumber || 'MANUAL-' + Date.now(),
+      series: manualInputData.series,
+      managementNumber: manualInputData.managementNumber,
+      vehicleNumber: manualInputData.vehicleNumber || 'MANUAL-' + Date.now(),
+      status: manualInputData.status || '수동입력',
       closureDate: '',
       department: '',
-      lastFourDigits: row.searchTerm.slice(-4),
+      lastFourDigits: manualInputData.vehicleNumber.slice(-4) || '0000',
       manager: ''
     };
     
-    selectVehicle(rowIndex, manualVehicle);
+    selectVehicle(manualInputModal.rowIndex, manualVehicle);
+    setManualInputModal(null);
+  };
+
+  const handleManualInputCancel = () => {
+    setManualInputModal(null);
+    setManualInputData({
+      accidentNumber: '',
+      series: '',
+      managementNumber: '',
+      vehicleNumber: '',
+      status: ''
+    });
   };
 
   const handleInputChange = (rowIndex: number, value: string) => {
@@ -671,6 +717,103 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
             dropdownPortalContainer
           )
         )
+      )}
+
+      {/* 수동 입력 모달 */}
+      {manualInputModal?.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-lg mx-4">
+            <h3 className="text-lg font-semibold mb-4">수동 데이터 입력</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  사고번호
+                </label>
+                <input
+                  type="text"
+                  value={manualInputData.accidentNumber}
+                  onChange={(e) => setManualInputData(prev => ({ ...prev, accidentNumber: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 07-202502-01130"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  서열
+                </label>
+                <input
+                  type="text"
+                  value={manualInputData.series}
+                  onChange={(e) => setManualInputData(prev => ({ ...prev, series: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 001"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  관리번호
+                </label>
+                <input
+                  type="text"
+                  value={manualInputData.managementNumber}
+                  onChange={(e) => setManualInputData(prev => ({ ...prev, managementNumber: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="관리번호 입력"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  피해자(물) *
+                </label>
+                <input
+                  type="text"
+                  value={manualInputData.vehicleNumber}
+                  onChange={(e) => setManualInputData(prev => ({ ...prev, vehicleNumber: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="예: 84주7365, 자전거, 보행자"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  상태
+                </label>
+                <select
+                  value={manualInputData.status}
+                  onChange={(e) => setManualInputData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">상태 선택</option>
+                  <option value="종결">종결</option>
+                  <option value="진행중">진행중</option>
+                  <option value="보류">보류</option>
+                  <option value="수동입력">수동입력</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={handleManualInputCancel}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleManualInputSave}
+                disabled={!manualInputData.vehicleNumber.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
