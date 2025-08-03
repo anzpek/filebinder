@@ -5,54 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>입고묶기 웹 시스템</title>
     <style>
-        body {
-            font-family: 'Malgun Gothic', Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 40px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
         }
+        
         .container {
             text-align: center;
             background: rgba(255, 255, 255, 0.1);
-            padding: 60px;
+            padding: 60px 40px;
             border-radius: 20px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 600px;
+            width: 90%;
         }
+        
+        .logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+        
         h1 {
-            font-size: 3em;
+            font-size: 2.5em;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
         }
-        .emoji {
-            font-size: 4em;
-            margin-bottom: 30px;
-        }
-        p {
+        
+        .subtitle {
             font-size: 1.2em;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            opacity: 0.9;
             line-height: 1.6;
         }
-        .status {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 10px;
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px;
+            border-radius: 15px;
             margin: 30px 0;
+            border-left: 5px solid #4CAF50;
         }
+        
+        .status-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
         .features {
             text-align: left;
             margin: 30px 0;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
         }
+        
+        .features h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .features ul {
+            list-style: none;
+        }
+        
         .features li {
-            margin: 10px 0;
-            padding-left: 10px;
+            margin: 12px 0;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.5;
         }
-        .github-link {
+        
+        .features li::before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .buttons {
+            margin-top: 40px;
+        }
+        
+        .btn {
             display: inline-block;
             background: rgba(255, 255, 255, 0.2);
             padding: 15px 30px;
@@ -60,50 +124,138 @@
             text-decoration: none;
             color: white;
             font-weight: bold;
-            transition: all 0.3s ease;
             margin: 10px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
-        .github-link:hover {
+        
+        .btn:hover {
             background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .btn-primary:hover {
+            background: #45a049;
+            border-color: #45a049;
+        }
+        
+        .tech-stack {
+            margin-top: 30px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .credit {
+            margin-top: 40px;
+            font-size: 0.85em;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .logo {
+                font-size: 3em;
+            }
+            
+            .btn {
+                display: block;
+                margin: 10px 0;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="emoji">🚗📋</div>
+        <div class="logo">🚗📋</div>
         <h1>입고묶기 웹 시스템</h1>
-        <p>차량 입고 데이터 처리 및 출력을 위한 웹 애플리케이션</p>
+        <p class="subtitle">차량 입고 데이터 처리 및 출력을 위한 웹 애플리케이션</p>
         
-        <div class="status">
-            <h3>🚧 현재 상태: 배포 준비 중</h3>
-            <p>Next.js 애플리케이션이 GitHub Pages에 배포되는 중입니다.</p>
+        <div class="status-card">
+            <div class="status-title">🎉 GitHub Pages 배포 완료!</div>
+            <p>웹사이트가 성공적으로 배포되었습니다.</p>
+            <p class="pulse">💡 현재 프로젝트 소개 페이지입니다.</p>
         </div>
 
         <div class="features">
             <h3>✨ 주요 기능</h3>
             <ul>
-                <li>📊 엑셀 스타일 데이터 입력 인터페이스</li>
-                <li>🔍 실시간 검색 및 드래그 가능한 드롭다운</li>
-                <li>🖨️ 완벽한 프린트 출력 기능</li>
-                <li>⚙️ 사용자 설정 가능한 출력 옵션</li>
-                <li>💾 설정 자동 저장</li>
+                <li>엑셀 스타일 데이터 입력 인터페이스</li>
+                <li>실시간 검색 및 드래그 가능한 드롭다운</li>
+                <li>완벽한 프린트 출력 기능</li>
+                <li>사용자 설정 가능한 출력 옵션 (30-40개)</li>
+                <li>localStorage 기반 설정 자동 저장</li>
+                <li>반응형 디자인으로 모든 기기 지원</li>
             </ul>
         </div>
 
-        <div>
-            <a href="https://github.com/anzpek/filebind" class="github-link">
-                📱 GitHub 저장소 보기
+        <div class="tech-stack">
+            <strong>🛠️ 기술 스택:</strong><br>
+            Next.js 14 • React 18 • TypeScript • Tailwind CSS
+        </div>
+
+        <div class="buttons">
+            <a href="https://github.com/anzpek/filebind" class="btn btn-primary">
+                📱 GitHub 저장소
             </a>
-            <a href="https://github.com/anzpek/filebind/actions" class="github-link">
-                🔄 배포 상태 확인
+            <a href="https://github.com/anzpek/filebind/archive/refs/heads/main.zip" class="btn">
+                📥 소스코드 다운로드
             </a>
         </div>
 
-        <div style="margin-top: 40px; font-size: 0.9em; opacity: 0.8;">
-            <p>🤖 Generated with Claude Code</p>
+        <div class="credit">
+            <p><strong>🤖 Generated with Claude Code</strong></p>
             <p>Co-Authored-By: Claude &lt;noreply@anthropic.com&gt;</p>
+            <p style="margin-top: 10px;">
+                <small>MIT License • 완전한 웹 애플리케이션 버전은 로컬에서 실행 가능합니다</small>
+            </p>
         </div>
     </div>
+
+    <script>
+        // 간단한 인터랙션 추가
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            
+            container.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            container.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>
