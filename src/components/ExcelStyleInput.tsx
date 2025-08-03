@@ -395,7 +395,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     const minTop = 0;
     
     setDropdownPosition({
-      left: Math.max(minLeft, Math.min(maxLeft, newLeft)),
+      left: `${Math.max(minLeft, Math.min(maxLeft, newLeft))}px`,
       top: Math.max(minTop, Math.min(maxTop, newTop))
     });
   }, [isDragging, dragStartPos]);
@@ -427,7 +427,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     // viewport 기준 위치 사용 (고정 위치)
     return {
       top: rect.bottom + 5, // 입력 필드 바로 아래 + 5px 여백
-      left: rect.left
+      left: `${rect.left}px`
     };
   }, []);
 
