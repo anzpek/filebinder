@@ -13,6 +13,13 @@ interface ExcelRow {
   dropdownVisible: boolean;
   selectedIndex: number;
   isManualInputMode?: boolean;
+  manualInputData?: {
+    accidentNumber: string;
+    series: string;
+    managementNumber: string;
+    vehicleNumber: string;
+    status: string;
+  };
 }
 
 interface ExcelStyleInputProps {
@@ -28,14 +35,6 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
   const [activeRowIndex, setActiveRowIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
-  const [manualInputModal, setManualInputModal] = useState<{isOpen: boolean, rowIndex: number} | null>(null);
-  const [manualInputData, setManualInputData] = useState({
-    accidentNumber: '',
-    series: '',
-    managementNumber: '',
-    vehicleNumber: '',
-    status: ''
-  });
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // 초기 행 생성
@@ -137,57 +136,131 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
 
   const handleManualInput = (rowIndex: number) => {
     const row = rows[rowIndex];
-    // 검색어를 기반으로 초기값 설정
-    setManualInputData({
-      accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : '',
-      series: '',
-      managementNumber: '',
-      vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? '' : row.searchTerm,
-      status: ''
-    });
     
-    // 드롭다운 닫기
+    // 드롭다운 닫기 및 수동 입력 모드 활성화
     setActiveRowIndex(null);
     setRows(prev => prev.map((r, i) => {
       if (i === rowIndex) {
-        return { ...r, dropdownVisible: false };
+        return { 
+          ...r, 
+          dropdownVisible: false,
+          isManualInputMode: true,
+          manualInputData: {
+            accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : '',
+            series: '',
+            managementNumber: '',
+            vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? '' : row.searchTerm,
+            status: ''
+          }
+        };
       }
       return r;
     }));
-    
-    // 모달 열기
-    setManualInputModal({ isOpen: true, rowIndex });
   };
 
-  const handleManualInputSave = () => {
-    if (!manualInputModal) return;
+  const handleManualInputComplete = (rowIndex: number) => {
+    const row = rows[rowIndex];
+    if (!row.manualInputData) return;
     
     const manualVehicle: VehicleData = {
       no: Date.now(),
-      accidentNumber: manualInputData.accidentNumber || 'MANUAL-' + Date.now(),
-      series: manualInputData.series,
-      managementNumber: manualInputData.managementNumber,
-      vehicleNumber: manualInputData.vehicleNumber || 'MANUAL-' + Date.now(),
-      status: manualInputData.status || '수동입력',
+      accidentNumber: row.manualInputData.accidentNumber || 'MANUAL-' + Date.now(),
+      series: row.manualInputData.series,
+      managementNumber: row.manualInputData.managementNumber,
+      vehicleNumber: row.manualInputData.vehicleNumber || 'MANUAL-' + Date.now(),
+      status: row.manualInputData.status || '수동입력',
       closureDate: '',
       department: '',
-      lastFourDigits: manualInputData.vehicleNumber.slice(-4) || '0000',
+      lastFourDigits: row.manualInputData.vehicleNumber.slice(-4) || '0000',
       manager: ''
     };
     
-    selectVehicle(manualInputModal.rowIndex, manualVehicle);
-    setManualInputModal(null);
+    // 수동 입력 모드 해제하고 차량 선택
+    setRows(prev => prev.map((r, i) => {
+      if (i === rowIndex) {
+        return { 
+          ...r, 
+          isManualInputMode: false,
+          manualInputData: undefined,
+          selectedVehicle: manualVehicle,
+          dropdownVisible: false,
+          availableVehicles: []
+        };
+      }
+      return r;
+    }));
+
+    // 마지막 행이면 새 행 추가
+    if (rowIndex === rows.length - 1) {
+      addNewRow();
+    } else {
+      // 다음 행으로 포커스 이동
+      setTimeout(() => {
+        const nextInput = inputRefs.current[rowIndex + 1];
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 0);
+    }
   };
 
-  const handleManualInputCancel = () => {
-    setManualInputModal(null);
-    setManualInputData({
-      accidentNumber: '',
-      series: '',
-      managementNumber: '',
-      vehicleNumber: '',
-      status: ''
-    });
+  const handleManualInputCancel = (rowIndex: number) => {
+    setRows(prev => prev.map((r, i) => {
+      if (i === rowIndex) {
+        return { 
+          ...r, 
+          isManualInputMode: false,
+          manualInputData: undefined
+        };
+      }
+      return r;
+    }));
+  };
+
+  const handleManualInputFieldChange = (rowIndex: number, field: string, value: string) => {
+    setRows(prev => prev.map((r, i) => {
+      if (i === rowIndex && r.manualInputData) {
+        return {
+          ...r,
+          manualInputData: {
+            ...r.manualInputData,
+            [field]: value
+          }
+        };
+      }
+      return r;
+    }));
+  };
+
+  const handleManualInputKeyDown = (e: React.KeyboardEvent, rowIndex: number, currentField: string) => {
+    const fieldOrder = ['accidentNumber', 'series', 'managementNumber', 'vehicleNumber', 'status'];
+    const currentIndex = fieldOrder.indexOf(currentField);
+    
+    if (e.key === 'Tab') {
+      // Tab 키는 기본 동작을 사용 (브라우저의 tabIndex 순서대로)
+      return;
+    }
+    
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentIndex < fieldOrder.length - 1) {
+        // 다음 필드로 이동
+        const nextField = fieldOrder[currentIndex + 1];
+        const nextElement = document.querySelector(`[tabindex="${rowIndex * 10 + currentIndex + 2}"]`) as HTMLInputElement;
+        if (nextElement) {
+          nextElement.focus();
+        }
+      } else {
+        // 마지막 필드에서 Enter를 누르면 저장
+        handleManualInputComplete(rowIndex);
+      }
+    }
+    
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleManualInputCancel(rowIndex);
+    }
   };
 
   const handleInputChange = (rowIndex: number, value: string) => {
@@ -568,45 +641,131 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                     {/* 드롭다운을 포털로 렌더링 */}
                   </div>
 
-                  {/* B~F열: 자동 채워지는 필드들 */}
-                  <div className="text-center py-1 px-2 bg-gray-50 rounded">
-                    {row.selectedVehicle?.accidentNumber || ''}
-                  </div>
-                  <div className="text-center py-1 px-2 bg-gray-50 rounded">
-                    {row.selectedVehicle?.series || ''}
-                  </div>
-                  <div className="text-center py-1 px-2 bg-gray-50 rounded">
-                    {row.selectedVehicle?.managementNumber || ''}
-                  </div>
-                  <div className={`text-center py-1 px-2 rounded ${
-                    isDuplicate ? 'bg-red-100 text-red-700 font-bold' : 'bg-gray-50'
-                  }`}>
-                    {row.selectedVehicle?.vehicleNumber || ''}
-                  </div>
-                  <div className="text-center py-1 px-2 bg-gray-50 rounded">
-                    {row.selectedVehicle?.status || ''}
-                  </div>
+                  {/* B~F열: 자동 채워지는 필드들 또는 수동 입력 필드들 */}
+                  {row.isManualInputMode ? (
+                    <>
+                      {/* 수동 입력 모드 */}
+                      <input
+                        type="text"
+                        value={row.manualInputData?.accidentNumber || ''}
+                        onChange={(e) => handleManualInputFieldChange(rowIndex, 'accidentNumber', e.target.value)}
+                        onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'accidentNumber')}
+                        placeholder="사고번호"
+                        className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
+                        style={{ fontSize: '13px' }}
+                        tabIndex={rowIndex * 10 + 1}
+                      />
+                      <input
+                        type="text"
+                        value={row.manualInputData?.series || ''}
+                        onChange={(e) => handleManualInputFieldChange(rowIndex, 'series', e.target.value)}
+                        onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'series')}
+                        placeholder="서열"
+                        className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
+                        style={{ fontSize: '13px' }}
+                        tabIndex={rowIndex * 10 + 2}
+                      />
+                      <input
+                        type="text"
+                        value={row.manualInputData?.managementNumber || ''}
+                        onChange={(e) => handleManualInputFieldChange(rowIndex, 'managementNumber', e.target.value)}
+                        onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'managementNumber')}
+                        placeholder="관리번호"
+                        className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
+                        style={{ fontSize: '13px' }}
+                        tabIndex={rowIndex * 10 + 3}
+                      />
+                      <input
+                        type="text"
+                        value={row.manualInputData?.vehicleNumber || ''}
+                        onChange={(e) => handleManualInputFieldChange(rowIndex, 'vehicleNumber', e.target.value)}
+                        onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'vehicleNumber')}
+                        placeholder="피해자(물) *"
+                        className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
+                        style={{ fontSize: '13px' }}
+                        tabIndex={rowIndex * 10 + 4}
+                        required
+                      />
+                      <select
+                        value={row.manualInputData?.status || ''}
+                        onChange={(e) => handleManualInputFieldChange(rowIndex, 'status', e.target.value)}
+                        onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'status')}
+                        className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
+                        style={{ fontSize: '13px' }}
+                        tabIndex={rowIndex * 10 + 5}
+                      >
+                        <option value="">상태 선택</option>
+                        <option value="종결">종결</option>
+                        <option value="진행중">진행중</option>
+                        <option value="보류">보류</option>
+                        <option value="수동입력">수동입력</option>
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      {/* 일반 모드 */}
+                      <div className="text-center py-1 px-2 bg-gray-50 rounded">
+                        {row.selectedVehicle?.accidentNumber || ''}
+                      </div>
+                      <div className="text-center py-1 px-2 bg-gray-50 rounded">
+                        {row.selectedVehicle?.series || ''}
+                      </div>
+                      <div className="text-center py-1 px-2 bg-gray-50 rounded">
+                        {row.selectedVehicle?.managementNumber || ''}
+                      </div>
+                      <div className={`text-center py-1 px-2 rounded ${
+                        isDuplicate ? 'bg-red-100 text-red-700 font-bold' : 'bg-gray-50'
+                      }`}>
+                        {row.selectedVehicle?.vehicleNumber || ''}
+                      </div>
+                      <div className="text-center py-1 px-2 bg-gray-50 rounded">
+                        {row.selectedVehicle?.status || ''}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* 행 관리 버튼들 */}
                 <div className="absolute -right-16 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
-                  {row.selectedVehicle && (
-                    <button
-                      onClick={() => clearRow(rowIndex)}
-                      className="text-yellow-600 hover:text-yellow-800 text-sm"
-                      title="초기화"
-                    >
-                      🔄
-                    </button>
-                  )}
-                  {rows.length > 1 && (
-                    <button
-                      onClick={() => removeRow(rowIndex)}
-                      className="text-red-500 hover:text-red-700 text-lg"
-                      title="삭제"
-                    >
-                      ×
-                    </button>
+                  {row.isManualInputMode ? (
+                    <>
+                      <button
+                        onClick={() => handleManualInputComplete(rowIndex)}
+                        disabled={!row.manualInputData?.vehicleNumber?.trim()}
+                        className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="저장"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => handleManualInputCancel(rowIndex)}
+                        className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
+                        title="취소"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {row.selectedVehicle && (
+                        <button
+                          onClick={() => clearRow(rowIndex)}
+                          className="text-yellow-600 hover:text-yellow-800 text-sm"
+                          title="초기화"
+                        >
+                          🔄
+                        </button>
+                      )}
+                      {rows.length > 1 && (
+                        <button
+                          onClick={() => removeRow(rowIndex)}
+                          className="text-red-500 hover:text-red-700 text-lg"
+                          title="삭제"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -717,103 +876,6 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
             dropdownPortalContainer
           )
         )
-      )}
-
-      {/* 수동 입력 모달 */}
-      {manualInputModal?.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-lg mx-4">
-            <h3 className="text-lg font-semibold mb-4">수동 데이터 입력</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  사고번호
-                </label>
-                <input
-                  type="text"
-                  value={manualInputData.accidentNumber}
-                  onChange={(e) => setManualInputData(prev => ({ ...prev, accidentNumber: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: 07-202502-01130"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  서열
-                </label>
-                <input
-                  type="text"
-                  value={manualInputData.series}
-                  onChange={(e) => setManualInputData(prev => ({ ...prev, series: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: 001"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  관리번호
-                </label>
-                <input
-                  type="text"
-                  value={manualInputData.managementNumber}
-                  onChange={(e) => setManualInputData(prev => ({ ...prev, managementNumber: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="관리번호 입력"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  피해자(물) *
-                </label>
-                <input
-                  type="text"
-                  value={manualInputData.vehicleNumber}
-                  onChange={(e) => setManualInputData(prev => ({ ...prev, vehicleNumber: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: 84주7365, 자전거, 보행자"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  상태
-                </label>
-                <select
-                  value={manualInputData.status}
-                  onChange={(e) => setManualInputData(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">상태 선택</option>
-                  <option value="종결">종결</option>
-                  <option value="진행중">진행중</option>
-                  <option value="보류">보류</option>
-                  <option value="수동입력">수동입력</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={handleManualInputCancel}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleManualInputSave}
-                disabled={!manualInputData.vehicleNumber.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
