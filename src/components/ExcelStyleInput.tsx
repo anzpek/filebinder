@@ -238,7 +238,22 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     const currentIndex = fieldOrder.indexOf(currentField);
     
     if (e.key === 'Tab') {
-      // Tab 키는 기본 동작을 사용 (브라우저의 tabIndex 순서대로)
+      if (currentIndex === fieldOrder.length - 1) {
+        // 마지막 필드에서 Tab을 누르면 다음 행의 A열로 이동
+        e.preventDefault();
+        
+        // 먼저 현재 데이터 저장
+        handleManualInputComplete(rowIndex);
+        
+        // 다음 행의 A열 입력 필드로 포커스 이동
+        setTimeout(() => {
+          const nextRowInput = inputRefs.current[rowIndex + 1];
+          if (nextRowInput) {
+            nextRowInput.focus();
+          }
+        }, 0);
+      }
+      // 다른 필드에서는 기본 Tab 동작 사용
       return;
     }
     
@@ -571,15 +586,15 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     
     const rect = inputElement.getBoundingClientRect();
     
-    // viewport 기준 위치 사용 (고정 위치)
+    // viewport 기준 위치 사용 (고정 위치) - fixed positioning용
     return {
       top: rect.bottom + 5, // 입력 필드 바로 아래 + 5px 여백
-      left: `${rect.left}px`
+      left: `${rect.left}px` // 입력 필드의 왼쪽 모서리 기준
     };
   }, []);
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">엑셀 스타일 입력</h2>
         <div className="text-sm text-gray-600">
@@ -734,6 +749,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                         disabled={!row.manualInputData?.vehicleNumber?.trim()}
                         className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="저장"
+                        tabIndex={-1}
                       >
                         ✓
                       </button>
@@ -741,6 +757,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                         onClick={() => handleManualInputCancel(rowIndex)}
                         className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
                         title="취소"
+                        tabIndex={-1}
                       >
                         ×
                       </button>
@@ -804,7 +821,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
               data-dropdown-row={rowIndex}
               style={{
                 top: `${dropdownPosition.top}px`,
-                left: `${dropdownPosition.left}px`,
+                left: dropdownPosition.left,
                 transform: 'none',
                 width: '420px',
                 maxHeight: row.availableVehicles.length === 0 

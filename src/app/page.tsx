@@ -80,7 +80,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Car className="h-8 w-8 text-primary-600" />
@@ -105,7 +105,7 @@ export default function HomePage() {
       </div>
 
       {/* 진행 단계 표시 */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-8">
             <div className={`flex items-center gap-2 ${
