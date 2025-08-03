@@ -31,13 +31,7 @@ jobs:
         run: npm ci
         
       - name: Build
-        run: |
-          npm run build || echo "Build failed, using fallback"
-          if [ ! -d "out" ]; then
-            echo "Creating fallback out directory"
-            mkdir -p out
-            cp -r public/* out/ 2>/dev/null || true
-          fi
+        run: npm run build
         env:
           NODE_ENV: production
           
