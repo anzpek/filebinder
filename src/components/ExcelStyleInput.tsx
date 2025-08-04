@@ -156,6 +156,14 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
       }
       return r;
     }));
+
+    // 수동 입력 모드 전환 후 첫 번째 필드(사고번호)에 포커스
+    setTimeout(() => {
+      const firstField = document.querySelector(`[tabindex="${rowIndex * 10 + 1}"]`) as HTMLInputElement;
+      if (firstField) {
+        firstField.focus();
+      }
+    }, 0);
   };
 
   const handleManualInputComplete = (rowIndex: number) => {
@@ -609,7 +617,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
       )}
 
       {vehicleData.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto pr-24">
           {/* 헤더 */}
           <div className="grid grid-cols-6 gap-2 mb-4 bg-blue-50 p-3 rounded-lg font-semibold text-gray-700">
             <div className="text-center">4자리입력</div>
@@ -701,20 +709,16 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                         tabIndex={rowIndex * 10 + 4}
                         required
                       />
-                      <select
+                      <input
+                        type="text"
                         value={row.manualInputData?.status || ''}
                         onChange={(e) => handleManualInputFieldChange(rowIndex, 'status', e.target.value)}
                         onKeyDown={(e) => handleManualInputKeyDown(e, rowIndex, 'status')}
+                        placeholder="상태"
                         className="w-full px-2 py-1 border border-blue-300 rounded text-center text-sm bg-blue-50"
                         style={{ fontSize: '13px' }}
                         tabIndex={rowIndex * 10 + 5}
-                      >
-                        <option value="">상태 선택</option>
-                        <option value="종결">종결</option>
-                        <option value="진행중">진행중</option>
-                        <option value="보류">보류</option>
-                        <option value="수동입력">수동입력</option>
-                      </select>
+                      />
                     </>
                   ) : (
                     <>
@@ -741,7 +745,7 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                 </div>
 
                 {/* 행 관리 버튼들 */}
-                <div className="absolute -right-16 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
+                <div className="absolute -right-20 top-1/2 transform -translate-y-1/2 flex flex-row gap-1">
                   {row.isManualInputMode ? (
                     <>
                       <button
