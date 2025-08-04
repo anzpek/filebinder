@@ -6,9 +6,28 @@ export const searchVehiclesByTerm = (vehicleData: VehicleData[], searchTerm: str
   const term = searchTerm.toLowerCase().trim();
   
   return vehicleData.filter(vehicle => {
-    // 차량번호 뒤 4자리 검색 (기존 기능)
-    if (term.length === 4 && /^\d{4}$/.test(term)) {
-      return vehicle.lastFourDigits === term;
+    // 4-5자리 숫자인 경우: 차량번호 뒤 4자리와 사고번호 뒤 4-5자리 모두 검색
+    if (/^\d{4,5}$/.test(term)) {
+      // 차량번호 뒤 4자리 검색
+      if (term.length === 4 && vehicle.lastFourDigits === term) {
+        return true;
+      }
+      
+      // 사고번호에서 4-5자리 부분 검색 - 더 정확한 매칭
+      const accidentNumber = vehicle.accidentNumber.toLowerCase();
+      
+      // 사고번호 끝 4-5자리 검색
+      if (term.length === 4) {
+        // 4자리: 사고번호 끝 4자리 또는 포함된 4자리 검색
+        if (accidentNumber.slice(-4) === term || accidentNumber.includes(term)) {
+          return true;
+        }
+      } else if (term.length === 5) {
+        // 5자리: 사고번호 끝 5자리 또는 포함된 5자리 검색
+        if (accidentNumber.slice(-5) === term || accidentNumber.includes(term)) {
+          return true;
+        }
+      }
     }
     
     // 피해물(차량번호) 부분 일치 검색

@@ -146,10 +146,10 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
           dropdownVisible: false,
           isManualInputMode: true,
           manualInputData: {
-            accidentNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? row.searchTerm : '',
+            accidentNumber: '',
             series: '',
             managementNumber: '',
-            vehicleNumber: row.searchTerm.includes('-') || /^\d{4}/.test(row.searchTerm) ? '' : row.searchTerm,
+            vehicleNumber: '',
             status: ''
           }
         };
@@ -639,12 +639,6 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                   <div className={`grid grid-cols-6 gap-2 border rounded-lg p-2 ${
                     isDuplicate ? 'border-red-400 bg-red-50' : 'border-gray-200'
                   }`}>
-                  {/* 우측 여백에 중복 경고 */}
-                  {isDuplicate && (
-                    <div className="absolute -right-24 top-2 text-red-600 text-sm font-bold">
-                      ⚠️ 중복!
-                    </div>
-                  )}
                   {/* A열: 입력 필드 */}
                   <div className="relative">
                     <input
@@ -805,8 +799,9 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
                 총 {rows.length}개 행 중 {rows.filter(r => r.selectedVehicle).length}개 완료
               </span>
               <div className="flex items-center gap-4 text-xs text-blue-600">
-                <span>Enter: 확인</span>
-                <span>↑↓: 행이동/선택</span>
+                <span>Enter: 확인/다음필드</span>
+                <span>Tab: 다음필드/다음행</span>
+                <span>↑↓: 행이동/드롭다운선택</span>
                 <span>Esc: 취소</span>
                 <span>🔄: 초기화</span>
               </div>
