@@ -8,8 +8,8 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  basePath: process.env.NODE_ENV === 'production' ? '/filebind' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/filebind' : ''
+  basePath: process.env.NODE_ENV === 'production' ? '/filebinder' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/filebinder' : ''
 }
 
 module.exports = nextConfig
