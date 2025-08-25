@@ -96,7 +96,7 @@ export default function DataUpload({ onDataLoad }: DataUploadProps) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">데이터 업로드</h2>
       
       {error && (
@@ -106,7 +106,7 @@ export default function DataUpload({ onDataLoad }: DataUploadProps) {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {/* 파일 업로드 영역 */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-700">파일 업로드</h3>
