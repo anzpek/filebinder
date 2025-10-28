@@ -520,6 +520,27 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
     }
   };
 
+  const resetAllRows = () => {
+    const initialRow: ExcelRow = {
+      id: `row-${Date.now()}`,
+      searchTerm: '',
+      availableVehicles: [],
+      dropdownVisible: false,
+      selectedIndex: 0
+    };
+    setRows([initialRow]);
+    setCurrentRowIndex(0);
+    setActiveRowIndex(null);
+    
+    // 첫 번째 입력 필드에 포커스
+    setTimeout(() => {
+      const firstInput = inputRefs.current[0];
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }, 0);
+  };
+
   const clearRow = (rowIndex: number) => {
     setActiveRowIndex(null);
     setRows(prev => prev.map((row, index) => {
@@ -604,7 +625,15 @@ export default function ExcelStyleInput({ vehicleData, onRowsChange }: ExcelStyl
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">엑셀 스타일 입력</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold text-gray-800">엑셀 스타일 입력</h2>
+          <button
+            onClick={resetAllRows}
+            className="btn-secondary"
+          >
+            전체 초기화
+          </button>
+        </div>
         <div className="text-sm text-gray-600">
           A열에 입력 후 Enter키를 누르세요
         </div>
